@@ -5,7 +5,12 @@ WORKDIR /srv
 COPY pyproject.toml ./
 COPY app ./app
 COPY scripts ./scripts
-RUN pip install --no-cache-dir .
+# build-essential нужен только на время сборки pyswisseph (C-расширение)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential \
+    && pip install --no-cache-dir . \
+    && apt-get purge -y --auto-remove build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
 # Справочник GeoNames собирается при деплое и монтируется томом:
 #   python scripts/load_geonames.py --countries RU --out /srv/data/geonames.sqlite
