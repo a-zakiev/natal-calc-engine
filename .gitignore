@@ -6,3 +6,4 @@ __pycache__/
 # локальные данные GeoNames (скачиваются скриптом)
 data/
 .DS_Store
+examples/*.png

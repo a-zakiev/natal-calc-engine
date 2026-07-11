@@ -1,0 +1,25 @@
+[project]
+name = "natal-calc-engine"
+version = "0.1.0"
+description = "Астрологические расчёты: натальная карта, синастрия, транзиты, SVG-колесо, геокодинг"
+license = "AGPL-3.0-or-later"
+requires-python = ">=3.11"
+dependencies = [
+    "kerykeion>=5.12",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "timezonefinder>=6.5",
+]
+
+[dependency-groups]
+dev = ["pytest>=8", "httpx>=0.27"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

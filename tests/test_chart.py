@@ -1,0 +1,70 @@
+from app.chart import natal, synastry, transits
+from app.schemas import BirthData, SvgOptions
+from datetime import datetime, timezone
+
+MOSCOW_1985 = BirthData(
+    label="Тест", year=1985, month=6, day=15, hour=12, minute=30,
+    lat=55.7558, lon=37.6173, place_label="Москва",
+)
+SPB_1990 = BirthData(
+    label="Тест2", year=1990, month=1, day=25, hour=8, minute=15,
+    lat=59.9343, lon=30.3351, place_label="Санкт-Петербург",
+)
+
+
+def test_natal_known_chart():
+    res = natal(MOSCOW_1985, with_svg=True, svg_opts=SvgOptions())
+    chart = res["chart"]
+    # 15 июня — Солнце в Близнецах; таймзона резолвится сама (tz не передан)
+    assert chart["sun"]["sign"] == "Gem"
+    assert chart["tz_str"] == "Europe/Moscow"
+    # Лето 1985: местное 12:30 = 08:30 UTC (декретное + летнее = +4)
+    assert chart["iso_formatted_utc_datetime"].startswith("1985-06-15T08:30")
+    assert chart["time_unknown"] is False
+    assert len(res["aspects"]) > 0
+    assert res["svg"].lstrip().startswith("<")
+
+
+def test_natal_time_unknown_strips_houses():
+    data = MOSCOW_1985.model_copy(update={"time_unknown": True, "hour": 23, "minute": 59})
+    res = natal(data, with_svg=False, svg_opts=SvgOptions())
+    chart = res["chart"]
+    assert chart["time_unknown"] is True
+    # Дома и угловые точки вырезаны
+    assert "first_house" not in chart
+    assert "ascendant" not in chart
+    # Расчёт от полудня, а не от переданного времени
+    assert "T12:00" in chart["iso_formatted_local_datetime"]
+    # Аспекты не содержат угловых точек
+    for a in res["aspects"]:
+        assert a["p1_name"] not in {"Ascendant", "Medium_Coeli"}
+        assert a["p2_name"] not in {"Ascendant", "Medium_Coeli"}
+
+
+def test_natal_svg_off():
+    res = natal(MOSCOW_1985, with_svg=False, svg_opts=SvgOptions())
+    assert res["svg"] is None
+
+
+def test_synastry():
+    res = synastry(MOSCOW_1985, SPB_1990, with_svg=False, svg_opts=SvgOptions())
+    assert len(res["aspects"]) > 0
+    assert 0 <= res["score"]["value"] <= 44
+    assert res["first"]["sun"]["sign"] == "Gem"
+    assert res["second"]["sun"]["sign"] == "Aqu"  # 25 января — Водолей
+
+
+def test_transits():
+    at = datetime(2026, 7, 11, 12, 0, tzinfo=timezone.utc)
+    res = transits(MOSCOW_1985, at)
+    assert res["at_utc"].startswith("2026-07-11T12:00")
+    assert len(res["aspects"]) > 0
+    # Транзитные позиции считаются на запрошенный момент
+    assert res["transit_positions"]["iso_formatted_utc_datetime"].startswith("2026-07-11T12:00")
+
+
+def test_determinism():
+    a = natal(MOSCOW_1985, with_svg=False, svg_opts=SvgOptions())
+    b = natal(MOSCOW_1985, with_svg=False, svg_opts=SvgOptions())
+    assert a["chart"]["sun"] == b["chart"]["sun"]
+    assert a["aspects"] == b["aspects"]
