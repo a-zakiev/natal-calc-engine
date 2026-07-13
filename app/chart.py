@@ -114,6 +114,43 @@ def synastry(first: BirthData, second: BirthData, with_svg: bool, svg_opts: SvgO
     }
 
 
+def progressions(b: BirthData, target_utc: datetime, with_svg: bool, svg_opts: SvgOptions) -> dict[str, Any]:
+    """Вторичные прогрессии («день за год»): прогрессивная карта = натал + возраст
+    (в годах) дней. Аспекты — прогрессивные точки к натальным."""
+    natal = build_subject(b)
+    nd = natal.model_dump()
+    natal_utc = datetime.fromisoformat(nd["iso_formatted_utc_datetime"])
+    natal_jd = swe.julday(
+        natal_utc.year, natal_utc.month, natal_utc.day,
+        natal_utc.hour + natal_utc.minute / 60 + natal_utc.second / 3600,
+    )
+    t = target_utc.astimezone(timezone.utc) if target_utc.tzinfo else target_utc.replace(tzinfo=timezone.utc)
+    target_jd = swe.julday(t.year, t.month, t.day, t.hour + t.minute / 60)
+    prog_jd = natal_jd + (target_jd - natal_jd) / 365.2422  # день за год
+
+    yy, mm, dd, hf = swe.revjul(prog_jd)
+    hh = int(hf)
+    mi = int((hf - hh) * 60)
+    prog_utc = datetime(yy, mm, dd, hh, mi, tzinfo=timezone.utc)
+
+    tz = b.tz or resolve_tz(b.lat, b.lon)
+    prog_subject = AstrologicalSubjectFactory.from_iso_utc_time(
+        name="Прогрессия",
+        iso_utc_time=prog_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        lat=b.lat, lng=b.lon, tz_str=tz,
+        city=b.place_label or "-", nation="", online=False,
+    )
+    wheel = ChartDataFactory.create_natal_chart_data(prog_subject)
+    cross = ChartDataFactory.create_transit_chart_data(natal, prog_subject)  # прогресс→натал
+    return {
+        "target": t.strftime("%Y-%m-%d"),
+        "progressed_utc": prog_utc.isoformat(),
+        "chart": _chart_dict(prog_subject, time_unknown=False),
+        "aspects": _aspects(cross),
+        "svg": _svg(wheel, svg_opts) if with_svg else None,
+    }
+
+
 def _sun_longitude(jd_ut: float) -> float:
     """Эклиптическая долгота Солнца (0..360) на юлианскую дату UT."""
     values, _ = swe.calc_ut(jd_ut, swe.SUN)

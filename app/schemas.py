@@ -70,3 +70,10 @@ class KeyDatesRequest(BaseModel):
     subject: BirthData
     start_utc: datetime
     days: int = Field(default=90, ge=7, le=366)
+
+
+class ProgressionsRequest(BaseModel):
+    subject: BirthData
+    target_utc: datetime  # на какой момент прогрессия (обычно «сейчас»)
+    with_svg: bool = True
+    svg: SvgOptions = SvgOptions()

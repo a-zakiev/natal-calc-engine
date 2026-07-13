@@ -1,4 +1,4 @@
-from app.chart import key_dates, natal, sky, solar_return, synastry, transits
+from app.chart import key_dates, natal, progressions, sky, solar_return, synastry, transits
 from app.schemas import BirthData, SvgOptions
 from datetime import datetime, timezone
 
@@ -62,6 +62,16 @@ def test_key_dates_scan():
         assert e["aspect"] in {"conjunction", "sextile", "square", "trine", "opposition"}
         assert e["transit"] != "Moon"  # Луна исключена
         assert r["start"] <= e["date"]
+
+
+def test_progressions_day_for_year():
+    """Прогрессии: прогрессивная дата = натал + возраст (в годах) дней."""
+    r = progressions(MOSCOW_1985, datetime(2025, 6, 15, tzinfo=timezone.utc), True, SvgOptions())
+    # 1985→2025 ≈ 40 лет → натал + ~40 дней (15.06 + 40 ≈ 25.07.1985)
+    assert r["progressed_utc"].startswith("1985-07-2")
+    assert r["target"] == "2025-06-15"
+    assert len(r["aspects"]) > 0
+    assert r["svg"].lstrip().startswith("<")
 
 
 def test_natal_time_unknown_strips_houses():

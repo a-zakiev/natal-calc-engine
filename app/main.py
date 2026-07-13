@@ -4,6 +4,7 @@ from . import chart, geocoding
 from .schemas import (
     KeyDatesRequest,
     NatalRequest,
+    ProgressionsRequest,
     SkyRequest,
     SolarReturnRequest,
     SynastryRequest,
@@ -64,6 +65,14 @@ def sky(req: SkyRequest) -> dict:
 def key_dates(req: KeyDatesRequest) -> dict:
     try:
         return chart.key_dates(req.subject, req.start_utc, req.days)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/progressions")
+def progressions(req: ProgressionsRequest) -> dict:
+    try:
+        return chart.progressions(req.subject, req.target_utc, req.with_svg, req.svg)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
