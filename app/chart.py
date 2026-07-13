@@ -199,6 +199,65 @@ def sky(at_utc: datetime) -> dict[str, Any]:
     }
 
 
+# Мажорные аспекты и их углы — для сканера ключевых дат
+_KEY_ASPECTS = {"conjunction": 0.0, "sextile": 60.0, "square": 90.0, "trine": 120.0, "opposition": 180.0}
+# Транзитные планеты для «ключевых дат»: Солнце + Марс и медленнее (без Луны/
+# Меркурия/Венеры — они дают частые мелкие транзиты и зашумляют список).
+_KEY_TRANSIT_PLANETS = {
+    "Sun": swe.SUN, "Mars": swe.MARS, "Jupiter": swe.JUPITER, "Saturn": swe.SATURN,
+    "Uranus": swe.URANUS, "Neptune": swe.NEPTUNE, "Pluto": swe.PLUTO,
+}
+_KEY_NATAL_POINTS = (
+    "sun", "moon", "mercury", "venus", "mars",
+    "jupiter", "saturn", "uranus", "neptune", "pluto",
+)
+
+
+def _ang_sep(a: float, b: float) -> float:
+    d = abs(a - b) % 360.0
+    return min(d, 360.0 - d)
+
+
+def key_dates(b: BirthData, start_utc: datetime, days: int = 90) -> dict[str, Any]:
+    """Точные мажорные транзиты к натальной карте в окне [start; start+days].
+    Дневная выборка, на каждое событие (транзит-аспект-натал) — день наибольшей
+    точности (мин. орбис ≤ 1.5°). Локация не важна для аспектов планета-планета."""
+    natal = build_subject(b).model_dump()
+    natal_points: dict[str, float] = {natal[k]["name"]: natal[k]["abs_pos"] for k in _KEY_NATAL_POINTS}
+    if not b.time_unknown:
+        for k in ("ascendant", "medium_coeli"):
+            if k in natal:
+                natal_points[natal[k]["name"]] = natal[k]["abs_pos"]
+
+    start = start_utc.astimezone(timezone.utc) if start_utc.tzinfo else start_utc.replace(tzinfo=timezone.utc)
+    jd0 = swe.julday(start.year, start.month, start.day, 12.0)
+
+    best: dict[tuple[str, str, str], tuple[float, float]] = {}
+    for i in range(days):
+        jd = jd0 + i
+        for tp_name, pid in _KEY_TRANSIT_PLANETS.items():
+            lon = swe.calc_ut(jd, pid)[0][0] % 360.0
+            for np_name, nlon in natal_points.items():
+                sep = _ang_sep(lon, nlon)
+                for asp_name, angle in _KEY_ASPECTS.items():
+                    orb = abs(sep - angle)
+                    if orb <= 1.5:
+                        key = (tp_name, asp_name, np_name)
+                        if key not in best or orb < best[key][0]:
+                            best[key] = (orb, jd)
+
+    events = []
+    for (tp_name, asp_name, np_name), (orb, jd) in best.items():
+        yy, mm, dd, _ = swe.revjul(jd)
+        events.append({
+            "date": f"{yy:04d}-{mm:02d}-{dd:02d}",
+            "transit": tp_name, "aspect": asp_name, "natal": np_name,
+            "orb": round(orb, 2),
+        })
+    events.sort(key=lambda e: e["date"])
+    return {"start": start.strftime("%Y-%m-%d"), "days": days, "events": events}
+
+
 def transits(b: BirthData, at_utc: datetime) -> dict[str, Any]:
     natal_subject = build_subject(b)
     at = at_utc.astimezone(timezone.utc) if at_utc.tzinfo else at_utc.replace(tzinfo=timezone.utc)

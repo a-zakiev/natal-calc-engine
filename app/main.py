@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Query
 
 from . import chart, geocoding
 from .schemas import (
+    KeyDatesRequest,
     NatalRequest,
     SkyRequest,
     SolarReturnRequest,
@@ -57,6 +58,14 @@ def solar_return(req: SolarReturnRequest) -> dict:
 @app.post("/sky")
 def sky(req: SkyRequest) -> dict:
     return chart.sky(req.at_utc)
+
+
+@app.post("/key-dates")
+def key_dates(req: KeyDatesRequest) -> dict:
+    try:
+        return chart.key_dates(req.subject, req.start_utc, req.days)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.get("/places")

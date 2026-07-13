@@ -1,4 +1,4 @@
-from app.chart import natal, sky, solar_return, synastry, transits
+from app.chart import key_dates, natal, sky, solar_return, synastry, transits
 from app.schemas import BirthData, SvgOptions
 from datetime import datetime, timezone
 
@@ -48,6 +48,20 @@ def test_sky_snapshot():
         "Ari", "Tau", "Gem", "Can", "Leo", "Vir", "Lib", "Sco", "Sag", "Cap", "Aqu", "Pis",
     }
     assert r["moon"]["phase_name"] and r["moon"]["emoji"]
+
+
+def test_key_dates_scan():
+    """Ключевые даты: список точных транзитов в окне, отсортирован, орбис ≤ 1.5°."""
+    r = key_dates(MOSCOW_1985, datetime(2026, 7, 13, tzinfo=timezone.utc), 90)
+    assert r["days"] == 90 and r["start"] == "2026-07-13"
+    assert len(r["events"]) > 0
+    dates = [e["date"] for e in r["events"]]
+    assert dates == sorted(dates)  # по возрастанию
+    for e in r["events"]:
+        assert e["orb"] <= 1.5
+        assert e["aspect"] in {"conjunction", "sextile", "square", "trine", "opposition"}
+        assert e["transit"] != "Moon"  # Луна исключена
+        assert r["start"] <= e["date"]
 
 
 def test_natal_time_unknown_strips_houses():

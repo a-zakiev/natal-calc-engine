@@ -64,3 +64,9 @@ class SolarReturnRequest(BaseModel):
 class SkyRequest(BaseModel):
     # Момент «сейчас» задаёт вызывающая сторона (сервис детерминирован).
     at_utc: datetime
+
+
+class KeyDatesRequest(BaseModel):
+    subject: BirthData
+    start_utc: datetime
+    days: int = Field(default=90, ge=7, le=366)
