@@ -1,4 +1,4 @@
-from app.chart import natal, solar_return, synastry, transits
+from app.chart import natal, sky, solar_return, synastry, transits
 from app.schemas import BirthData, SvgOptions
 from datetime import datetime, timezone
 
@@ -37,6 +37,17 @@ def test_solar_return_sun_matches_natal():
     assert sr["chart"]["sun"]["sign"] == "Gem"
     assert len(sr["aspects"]) > 0
     assert sr["svg"].lstrip().startswith("<")
+
+
+def test_sky_snapshot():
+    """Небо на дату: ретро Меркурия известно, фаза Луны и знаки заполнены."""
+    r = sky(datetime(2026, 7, 13, 12, 0, tzinfo=timezone.utc))
+    assert len(r["planets"]) == 10
+    assert "Mercury" in r["retrogrades"]  # 13.07.2026 Меркурий ретроградный
+    assert r["moon"]["sign"] in {
+        "Ari", "Tau", "Gem", "Can", "Leo", "Vir", "Lib", "Sco", "Sag", "Cap", "Aqu", "Pis",
+    }
+    assert r["moon"]["phase_name"] and r["moon"]["emoji"]
 
 
 def test_natal_time_unknown_strips_houses():

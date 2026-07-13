@@ -1,7 +1,13 @@
 from fastapi import FastAPI, HTTPException, Query
 
 from . import chart, geocoding
-from .schemas import NatalRequest, SolarReturnRequest, SynastryRequest, TransitsRequest
+from .schemas import (
+    NatalRequest,
+    SkyRequest,
+    SolarReturnRequest,
+    SynastryRequest,
+    TransitsRequest,
+)
 
 app = FastAPI(
     title="natal-calc-engine",
@@ -46,6 +52,11 @@ def solar_return(req: SolarReturnRequest) -> dict:
         return chart.solar_return(req.subject, req.year, req.with_svg, req.svg)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/sky")
+def sky(req: SkyRequest) -> dict:
+    return chart.sky(req.at_utc)
 
 
 @app.get("/places")

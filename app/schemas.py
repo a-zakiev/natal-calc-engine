@@ -59,3 +59,8 @@ class SolarReturnRequest(BaseModel):
     year: int = Field(ge=1000, le=2200)  # год соляра
     with_svg: bool = True
     svg: SvgOptions = SvgOptions()
+
+
+class SkyRequest(BaseModel):
+    # Момент «сейчас» задаёт вызывающая сторона (сервис детерминирован).
+    at_utc: datetime

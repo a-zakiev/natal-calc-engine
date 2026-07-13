@@ -165,6 +165,40 @@ def solar_return(b: BirthData, year: int, with_svg: bool, svg_opts: SvgOptions) 
     }
 
 
+SKY_POINTS = (
+    "sun", "moon", "mercury", "venus", "mars",
+    "jupiter", "saturn", "uranus", "neptune", "pluto",
+)
+
+
+def sky(at_utc: datetime) -> dict[str, Any]:
+    """Небо «сейчас» (общее, не по карте): знаки планет, ретроградность, фаза Луны.
+    Знаки/ретро/фаза не зависят от локации — берём нейтральную точку."""
+    at = at_utc.astimezone(timezone.utc) if at_utc.tzinfo else at_utc.replace(tzinfo=timezone.utc)
+    subject = AstrologicalSubjectFactory.from_iso_utc_time(
+        name="Sky",
+        iso_utc_time=at.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        lat=55.75, lng=37.62, tz_str="UTC",
+        city="-", nation="", online=False,
+    )
+    d = subject.model_dump()
+    planets = [
+        {"name": d[p]["name"], "sign": d[p]["sign"], "retrograde": bool(d[p].get("retrograde"))}
+        for p in SKY_POINTS
+    ]
+    lp = d.get("lunar_phase") or {}
+    return {
+        "at_utc": at.isoformat(),
+        "planets": planets,
+        "retrogrades": [pl["name"] for pl in planets if pl["retrograde"]],
+        "moon": {
+            "sign": d["moon"]["sign"],
+            "phase_name": lp.get("moon_phase_name"),
+            "emoji": lp.get("moon_emoji"),
+        },
+    }
+
+
 def transits(b: BirthData, at_utc: datetime) -> dict[str, Any]:
     natal_subject = build_subject(b)
     at = at_utc.astimezone(timezone.utc) if at_utc.tzinfo else at_utc.replace(tzinfo=timezone.utc)
