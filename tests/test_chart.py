@@ -1,4 +1,4 @@
-from app.chart import natal, synastry, transits
+from app.chart import natal, solar_return, synastry, transits
 from app.schemas import BirthData, SvgOptions
 from datetime import datetime, timezone
 
@@ -23,6 +23,20 @@ def test_natal_known_chart():
     assert chart["time_unknown"] is False
     assert len(res["aspects"]) > 0
     assert res["svg"].lstrip().startswith("<")
+
+
+def test_solar_return_sun_matches_natal():
+    """Соляр: Солнце возвращается к натальной долготе; момент — у дня рождения."""
+    n = natal(MOSCOW_1985, with_svg=False, svg_opts=SvgOptions())
+    sr = solar_return(MOSCOW_1985, 2026, with_svg=True, svg_opts=SvgOptions())
+    assert sr["year"] == 2026
+    # долгота Солнца соляра == натальной (с точностью солвера)
+    assert abs(sr["chart"]["sun"]["abs_pos"] - n["chart"]["sun"]["abs_pos"]) < 0.001
+    # момент соляра — в районе дня рождения (15 июня ± 1 день)
+    assert sr["sr_utc"].startswith("2026-06-1")
+    assert sr["chart"]["sun"]["sign"] == "Gem"
+    assert len(sr["aspects"]) > 0
+    assert sr["svg"].lstrip().startswith("<")
 
 
 def test_natal_time_unknown_strips_houses():

@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Query
 
 from . import chart, geocoding
-from .schemas import NatalRequest, SynastryRequest, TransitsRequest
+from .schemas import NatalRequest, SolarReturnRequest, SynastryRequest, TransitsRequest
 
 app = FastAPI(
     title="natal-calc-engine",
@@ -36,6 +36,14 @@ def synastry(req: SynastryRequest) -> dict:
 def transits(req: TransitsRequest) -> dict:
     try:
         return chart.transits(req.subject, req.at_utc)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/solar-return")
+def solar_return(req: SolarReturnRequest) -> dict:
+    try:
+        return chart.solar_return(req.subject, req.year, req.with_svg, req.svg)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

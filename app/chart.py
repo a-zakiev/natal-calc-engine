@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from functools import lru_cache
 from typing import Any
 
+import swisseph as swe
 from kerykeion import (
     AstrologicalSubjectFactory,
     ChartDataFactory,
@@ -109,6 +110,57 @@ def synastry(first: BirthData, second: BirthData, with_svg: bool, svg_opts: SvgO
             "value": score.score_value,
             "description": score.score_description,
         },
+        "svg": _svg(chart_data, svg_opts) if with_svg else None,
+    }
+
+
+def _sun_longitude(jd_ut: float) -> float:
+    """Эклиптическая долгота Солнца (0..360) на юлианскую дату UT."""
+    values, _ = swe.calc_ut(jd_ut, swe.SUN)
+    return values[0] % 360.0
+
+
+def _find_solar_return_jd(natal_sun_lon: float, year: int, month: int, day: int) -> float:
+    """JD (UT) момента, когда Солнце возвращается к натальной долготе в году `year`.
+    Ньютон: Солнце движется ~0.9856°/сутки, старт — день рождения, ~6 итераций."""
+    jd = swe.julday(year, month, day, 12.0)
+    for _ in range(12):
+        cur = _sun_longitude(jd)
+        diff = ((natal_sun_lon - cur + 180.0) % 360.0) - 180.0  # [-180, 180]
+        if abs(diff) < 1e-7:
+            break
+        jd += diff / 0.98564736  # градусов в сутки → сутки
+    return jd
+
+
+def solar_return(b: BirthData, year: int, with_svg: bool, svg_opts: SvgOptions) -> dict[str, Any]:
+    """Соляр («карта года»): чарт на момент возврата Солнца к натальной позиции.
+    Локация — место рождения (кол-соляр без релокации)."""
+    natal = build_subject(b)
+    natal_sun_lon = natal.model_dump()["sun"]["abs_pos"]
+
+    jd = _find_solar_return_jd(natal_sun_lon, year, b.month, b.day)
+    yy, mm, dd, hour_f = swe.revjul(jd)
+    hh = int(hour_f)
+    mi = int(round((hour_f - hh) * 60))
+    if mi == 60:  # округление минут вверх
+        hh, mi = hh + 1, 0
+    sr_utc = datetime(yy, mm, dd, hh, mi, tzinfo=timezone.utc)
+
+    tz = b.tz or resolve_tz(b.lat, b.lon)
+    sr_subject = AstrologicalSubjectFactory.from_iso_utc_time(
+        name=f"Соляр {year}",
+        iso_utc_time=sr_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        lat=b.lat, lng=b.lon, tz_str=tz,
+        city=b.place_label or "-", nation="",
+        online=False,
+    )
+    chart_data = ChartDataFactory.create_natal_chart_data(sr_subject)
+    return {
+        "year": year,
+        "sr_utc": sr_utc.isoformat(),
+        "chart": _chart_dict(sr_subject, time_unknown=False),
+        "aspects": _aspects(chart_data),
         "svg": _svg(chart_data, svg_opts) if with_svg else None,
     }
 

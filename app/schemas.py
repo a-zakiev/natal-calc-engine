@@ -52,3 +52,10 @@ class TransitsRequest(BaseModel):
     # Момент транзита задаётся вызывающей стороной: сервис детерминирован,
     # "сейчас" знает только backend.
     at_utc: datetime
+
+
+class SolarReturnRequest(BaseModel):
+    subject: BirthData
+    year: int = Field(ge=1000, le=2200)  # год соляра
+    with_svg: bool = True
+    svg: SvgOptions = SvgOptions()
