@@ -1,4 +1,4 @@
-from app.chart import key_dates, natal, progressions, sky, solar_return, synastry, transits
+from app.chart import composite, key_dates, natal, progressions, sky, solar_return, synastry, transits
 from app.schemas import BirthData, SvgOptions
 from datetime import datetime, timezone
 
@@ -101,6 +101,14 @@ def test_synastry():
     assert 0 <= res["score"]["value"] <= 44
     assert res["first"]["sun"]["sign"] == "Gem"
     assert res["second"]["sun"]["sign"] == "Aqu"  # 25 января — Водолей
+
+
+def test_composite():
+    res = composite(MOSCOW_1985, SPB_1990, with_svg=True, svg_opts=SvgOptions())
+    assert len(res["aspects"]) > 0
+    for pt in ("sun", "moon", "ascendant"):
+        assert pt in res["chart"]
+    assert res["svg"] and "<svg" in res["svg"]
 
 
 def test_transits():

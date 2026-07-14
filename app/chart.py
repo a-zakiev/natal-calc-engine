@@ -9,6 +9,7 @@ from kerykeion import (
     AstrologicalSubjectFactory,
     ChartDataFactory,
     ChartDrawer,
+    CompositeSubjectFactory,
     RelationshipScoreFactory,
 )
 from timezonefinder import TimezoneFinder
@@ -81,6 +82,18 @@ def _svg(chart_data, opts: SvgOptions) -> str:
     if opts.wheel_only:
         return drawer.generate_wheel_only_svg_string()
     return drawer.generate_svg_string()
+
+
+def composite(first: BirthData, second: BirthData, with_svg: bool, svg_opts: SvgOptions) -> dict[str, Any]:
+    """Композит — карта-мидпойнт отношений (метод средних точек)."""
+    s1, s2 = build_subject(first), build_subject(second)
+    comp = CompositeSubjectFactory(s1, s2, "Композит").get_midpoint_composite_subject_model()
+    chart_data = ChartDataFactory.create_composite_chart_data(comp)
+    return {
+        "chart": comp.model_dump(),
+        "aspects": _aspects(chart_data),
+        "svg": _svg(chart_data, svg_opts) if with_svg else None,
+    }
 
 
 def natal(b: BirthData, with_svg: bool, svg_opts: SvgOptions) -> dict[str, Any]:

@@ -40,6 +40,14 @@ def synastry(req: SynastryRequest) -> dict:
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@app.post("/composite")
+def composite(req: SynastryRequest) -> dict:
+    try:
+        return chart.composite(req.first, req.second, req.with_svg, req.svg)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @app.post("/transits")
 def transits(req: TransitsRequest) -> dict:
     try:
