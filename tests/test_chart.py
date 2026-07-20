@@ -59,8 +59,10 @@ def test_key_dates_scan():
     assert dates == sorted(dates)  # по возрастанию
     for e in r["events"]:
         assert e["orb"] <= 1.5
-        assert e["aspect"] in {"conjunction", "sextile", "square", "trine", "opposition"}
-        assert e["transit"] != "Moon"  # Луна исключена
+        assert e["aspect"] in {
+            "conjunction", "sextile", "square", "trine", "opposition", "quincunx",
+        }
+        assert e["transit"] != "Moon"  # Луна исключена (Меркурий/Венера — включены)
         assert r["start"] <= e["date"]
 
 
