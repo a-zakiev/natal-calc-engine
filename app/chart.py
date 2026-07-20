@@ -250,11 +250,18 @@ def sky(at_utc: datetime) -> dict[str, Any]:
 
 
 # Мажорные аспекты и их углы — для сканера ключевых дат
-_KEY_ASPECTS = {"conjunction": 0.0, "sextile": 60.0, "square": 90.0, "trine": 120.0, "opposition": 180.0}
-# Транзитные планеты для «ключевых дат»: Солнце + Марс и медленнее (без Луны/
-# Меркурия/Венеры — они дают частые мелкие транзиты и зашумляют список).
+# Те же аспекты, что отдаёт /transits (включая квинконс) — чтобы «ключевые даты»
+# были подмножеством транзитов, а не отдельным набором.
+_KEY_ASPECTS = {
+    "conjunction": 0.0, "sextile": 60.0, "square": 90.0,
+    "trine": 120.0, "opposition": 180.0, "quincunx": 150.0,
+}
+# Транзитные планеты для «ключевых дат»: всё, кроме Луны. Луну исключаем — она
+# делает аспект почти к каждой точке ежемесячно, «датой» это называть бессмысленно
+# (в /transits Луна остаётся — там показываем активное «сейчас»).
 _KEY_TRANSIT_PLANETS = {
-    "Sun": swe.SUN, "Mars": swe.MARS, "Jupiter": swe.JUPITER, "Saturn": swe.SATURN,
+    "Sun": swe.SUN, "Mercury": swe.MERCURY, "Venus": swe.VENUS, "Mars": swe.MARS,
+    "Jupiter": swe.JUPITER, "Saturn": swe.SATURN,
     "Uranus": swe.URANUS, "Neptune": swe.NEPTUNE, "Pluto": swe.PLUTO,
 }
 _KEY_NATAL_POINTS = (
