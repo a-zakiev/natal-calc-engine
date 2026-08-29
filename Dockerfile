@@ -1,3 +1,16 @@
+# ── Сборка справочника GeoNames отдельной стадией ───────────────────────────
+# Раньше справочник собирался вручную на сервере и жил в томе. Это разъезжалось
+# с кодом: на проде месяцами лежала база только по России, из-за чего человек
+# из Ташкента получал карту по координатам башкирского села. Теперь данные
+# едут вместе с образом — деплой движка обновляет и код, и справочник.
+# Скачиваемые дампы (~230 МБ) остаются в этой стадии и в финальный образ
+# не попадают: туда копируется только готовый sqlite (~100 МБ).
+FROM python:3.13-slim AS geonames
+WORKDIR /build
+COPY scripts/load_geonames.py ./
+RUN python load_geonames.py --out /build/geonames.sqlite
+
+# ── Рантайм ─────────────────────────────────────────────────────────────────
 FROM python:3.13-slim
 
 WORKDIR /srv
@@ -12,10 +25,11 @@ RUN apt-get update \
     && apt-get purge -y --auto-remove build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Справочник GeoNames собирается при деплое и монтируется томом:
-#   python scripts/load_geonames.py --out /srv/data/geonames.sqlite
-ENV GEONAMES_DB=/srv/data/geonames.sqlite
-VOLUME /srv/data
+# Путь намеренно вне /srv/data: туда compose монтирует старый том, который
+# перекрыл бы вшитый файл. Том можно убрать из compose, но и оставленный
+# пустым он теперь ни на что не влияет.
+COPY --from=geonames /build/geonames.sqlite /srv/geonames/geonames.sqlite
+ENV GEONAMES_DB=/srv/geonames/geonames.sqlite
 
 EXPOSE 8100
 HEALTHCHECK --interval=30s --timeout=5s CMD python -c \
