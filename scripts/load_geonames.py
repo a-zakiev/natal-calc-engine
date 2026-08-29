@@ -187,9 +187,12 @@ def build(countries: list[str], world: bool, out: Path, cache: Path) -> None:
 
     print("Проход 3/3: запись справочника", file=sys.stderr)
     out.parent.mkdir(parents=True, exist_ok=True)
-    if out.exists():
-        out.unlink()
-    conn = sqlite3.connect(out)
+    # Пишем рядом и подменяем в самом конце: сборка идёт минуты, и всё это
+    # время работающий сервис должен искать города по старому справочнику.
+    tmp_out = out.with_name(out.name + ".building")
+    if tmp_out.exists():
+        tmp_out.unlink()
+    conn = sqlite3.connect(tmp_out)
     conn.executescript(SCHEMA)
 
     seen: set[int] = set()
@@ -235,8 +238,11 @@ def build(countries: list[str], world: bool, out: Path, cache: Path) -> None:
     conn.executescript("CREATE INDEX idx_place_names ON place_names(name_norm);\nVACUUM;")
     conn.commit()
     conn.close()
+    os.replace(tmp_out, out)
     size_mb = out.stat().st_size / 1048576
     print(f"Готово: {total} населённых пунктов → {out} ({size_mb:.0f} МБ)", file=sys.stderr)
+    print("Перезапустите calc, чтобы он открыл новый файл: docker compose restart calc",
+          file=sys.stderr)
 
 
 if __name__ == "__main__":
