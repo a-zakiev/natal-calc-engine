@@ -36,11 +36,11 @@
 
 ```bash
 pip install .                       # или: docker build -t natal-calc-engine .
-python scripts/load_geonames.py     # справочник RU → data/geonames.sqlite (~32 МБ)
+python scripts/load_geonames.py     # весь мир → data/geonames.sqlite (~97 МБ)
 uvicorn app.main:app --port 8100
 ```
 
-Справочник других стран: `--countries RU,BY,KZ,UA`. Без справочника сервис
+По умолчанию: полные дампы стран СНГ (с деревнями) + cities500 на весь мир + русские названия из alternateNamesV2. Сузить: `--countries RU --no-world`. Без справочника сервис
 работает, но `/places` отвечает 503 (координаты можно передавать напрямую).
 
 ## Разработка

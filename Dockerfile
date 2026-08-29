@@ -13,7 +13,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Справочник GeoNames собирается при деплое и монтируется томом:
-#   python scripts/load_geonames.py --countries RU --out /srv/data/geonames.sqlite
+#   python scripts/load_geonames.py --out /srv/data/geonames.sqlite
 ENV GEONAMES_DB=/srv/data/geonames.sqlite
 VOLUME /srv/data
 
