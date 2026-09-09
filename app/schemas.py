@@ -61,6 +61,23 @@ class SolarReturnRequest(BaseModel):
     svg: SvgOptions = SvgOptions()
 
 
+class LunarReturnRequest(BaseModel):
+    subject: BirthData
+    year: int = Field(ge=1900, le=2200)
+    month: int = Field(ge=1, le=12)
+    with_svg: bool = True
+    svg: SvgOptions = SvgOptions()
+
+
+class RelocationRequest(BaseModel):
+    subject: BirthData
+    lat: float = Field(ge=-90, le=90)
+    lon: float = Field(ge=-180, le=180)
+    place_label: str = ""
+    with_svg: bool = True
+    svg: SvgOptions = SvgOptions()
+
+
 class SkyRequest(BaseModel):
     # Момент «сейчас» задаёт вызывающая сторона (сервис детерминирован).
     at_utc: datetime

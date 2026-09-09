@@ -6,6 +6,8 @@ from .schemas import (
     NatalRequest,
     ProgressionsRequest,
     SkyRequest,
+    LunarReturnRequest,
+    RelocationRequest,
     SolarReturnRequest,
     SynastryRequest,
     TransitsRequest,
@@ -62,6 +64,27 @@ def solar_return(req: SolarReturnRequest) -> dict:
         return chart.solar_return(req.subject, req.year, req.with_svg, req.svg)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/lunar-return")
+def lunar_return(req: LunarReturnRequest) -> dict:
+    try:
+        return chart.lunar_return(req.subject, req.year, req.month, req.with_svg, req.svg)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/relocation")
+def relocation(req: RelocationRequest) -> dict:
+    try:
+        return chart.relocation(req.subject, req.lat, req.lon, req.place_label, req.with_svg, req.svg)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/retrogrades")
+def retrogrades(year: int = Query(ge=1900, le=2200)) -> dict:
+    return chart.retrogrades(year)
 
 
 @app.post("/sky")

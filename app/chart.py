@@ -332,3 +332,168 @@ def transits(b: BirthData, at_utc: datetime) -> dict[str, Any]:
         "transit_positions": _chart_dict(transit_subject, time_unknown=False),
         "aspects": _aspects(chart_data, drop),
     }
+
+
+# --- Ретроградные периоды ----------------------------------------------------
+
+_RETRO_PLANETS = {
+    "Mercury": swe.MERCURY, "Venus": swe.VENUS, "Mars": swe.MARS,
+    "Jupiter": swe.JUPITER, "Saturn": swe.SATURN, "Uranus": swe.URANUS,
+    "Neptune": swe.NEPTUNE, "Pluto": swe.PLUTO,
+}
+
+
+def _speed(jd: float, planet: int) -> float:
+    values, _ = swe.calc_ut(jd, planet)
+    return values[3]  # скорость по долготе, °/сутки
+
+
+def _refine_station(planet: int, lo: float, hi: float) -> float:
+    """Момент смены знака скорости (станция) бисекцией до ~минуты."""
+    s_lo = _speed(lo, planet)
+    for _ in range(40):
+        mid = (lo + hi) / 2
+        if _speed(mid, planet) * s_lo > 0:
+            lo = mid
+        else:
+            hi = mid
+        if hi - lo < 1 / 1440:
+            break
+    return (lo + hi) / 2
+
+
+def _jd_to_date(jd: float) -> str:
+    yy, mm, dd, _ = swe.revjul(jd)
+    return f"{yy:04d}-{mm:02d}-{dd:02d}"
+
+
+def retrogrades(year: int) -> dict[str, Any]:
+    """Периоды ретроградности планет за календарный год.
+
+    Дневное сканирование знака скорости + бисекция станций до минуты.
+    Захватываем месяц с обеих сторон, чтобы период, начавшийся в декабре
+    прошлого года, не потерял левую границу; отдаём пересекающиеся с годом."""
+    jd_from = swe.julday(year - 1, 12, 1, 0.0)
+    jd_to = swe.julday(year + 1, 2, 1, 0.0)
+    out: dict[str, list[dict[str, Any]]] = {}
+    year_start, year_end = f"{year:04d}-01-01", f"{year:04d}-12-31"
+
+    for name, planet in _RETRO_PLANETS.items():
+        periods: list[dict[str, Any]] = []
+        started: float | None = None
+        prev_jd, prev_retro = jd_from, _speed(jd_from, planet) < 0
+        if prev_retro:
+            started = jd_from
+        jd = jd_from + 1
+        while jd <= jd_to:
+            retro = _speed(jd, planet) < 0
+            if retro != prev_retro:
+                station = _refine_station(planet, prev_jd, jd)
+                if retro:
+                    started = station
+                elif started is not None:
+                    periods.append({"start": started, "end": station})
+                    started = None
+            prev_jd, prev_retro = jd, retro
+            jd += 1
+        if started is not None:
+            periods.append({"start": started, "end": None})  # уходит за окно
+
+        rows = []
+        for p in periods:
+            start = _jd_to_date(p["start"])
+            end = _jd_to_date(p["end"]) if p["end"] else None
+            # пересечение с целевым годом
+            if (end or "9999") < year_start or start > year_end:
+                continue
+            rows.append({"start": start, "end": end})
+        out[name] = rows
+
+    return {"year": year, "planets": out}
+
+
+# --- Лунар (возвращение Луны) ------------------------------------------------
+
+def _moon_longitude(jd_ut: float) -> float:
+    values, _ = swe.calc_ut(jd_ut, swe.MOON)
+    return values[0] % 360.0
+
+
+def _find_lunar_return_jd(natal_moon_lon: float, year: int, month: int) -> float:
+    """JD (UT) возврата Луны к натальной долготе в заданном месяце.
+    Луна: ~13.18°/сутки, полный круг ~27.3 суток — в любом месяце возврат есть.
+    Ньютон от середины месяца сходится за несколько итераций."""
+    jd = swe.julday(year, month, 15, 0.0)
+    for _ in range(20):
+        cur = _moon_longitude(jd)
+        diff = ((natal_moon_lon - cur + 180.0) % 360.0) - 180.0
+        if abs(diff) < 1e-6:
+            break
+        jd += diff / 13.176396
+    return jd
+
+
+def lunar_return(b: BirthData, year: int, month: int,
+                 with_svg: bool, svg_opts: SvgOptions) -> dict[str, Any]:
+    """Лунар («карта месяца»): чарт на момент возврата Луны к натальной позиции.
+    Полный аналог соляра, только цикл месячный. Локация — место рождения."""
+    natal = build_subject(b)
+    natal_moon_lon = natal.model_dump()["moon"]["abs_pos"]
+
+    jd = _find_lunar_return_jd(natal_moon_lon, year, month)
+    yy, mm, dd, hour_f = swe.revjul(jd)
+    hh = int(hour_f)
+    mi = int(round((hour_f - hh) * 60))
+    if mi == 60:
+        hh, mi = hh + 1, 0
+    lr_utc = datetime(yy, mm, dd, hh, mi, tzinfo=timezone.utc)
+
+    tz = b.tz or resolve_tz(b.lat, b.lon)
+    lr_subject = AstrologicalSubjectFactory.from_iso_utc_time(
+        name=f"Лунар {year}-{month:02d}",
+        iso_utc_time=lr_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        lat=b.lat, lng=b.lon, tz_str=tz,
+        city=b.place_label or "-", nation="",
+        online=False,
+    )
+    chart_data = ChartDataFactory.create_natal_chart_data(lr_subject)
+    return {
+        "year": year,
+        "month": month,
+        "lr_utc": lr_utc.isoformat(),
+        "chart": _chart_dict(lr_subject, time_unknown=False),
+        "aspects": _aspects(chart_data),
+        "svg": _svg(chart_data, svg_opts) if with_svg else None,
+    }
+
+
+# --- Реллокация ---------------------------------------------------------------
+
+def relocation(b: BirthData, lat: float, lon: float, place_label: str,
+               with_svg: bool, svg_opts: SvgOptions) -> dict[str, Any]:
+    """Карта в другом месте: тот же момент рождения (UTC), дома — по новым
+    координатам. Планеты не меняются — меняются ASC/MC и распределение по домам.
+    Момент UTC восстанавливаем из локального времени рождения и зоны РОДНОГО
+    места; зона нового — только для представления времени."""
+    from zoneinfo import ZoneInfo
+
+    birth_tz = ZoneInfo(b.tz or resolve_tz(b.lat, b.lon))
+    hour, minute = (12, 0) if b.time_unknown else (b.hour, b.minute)
+    birth_utc = datetime(b.year, b.month, b.day, hour, minute, tzinfo=birth_tz).astimezone(timezone.utc)
+
+    new_tz = resolve_tz(lat, lon)
+    subject = AstrologicalSubjectFactory.from_iso_utc_time(
+        name=b.label,
+        iso_utc_time=birth_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        lat=lat, lng=lon, tz_str=new_tz,
+        city=place_label or "-", nation="",
+        online=False,
+    )
+    chart_data = ChartDataFactory.create_natal_chart_data(subject)
+    return {
+        "place_label": place_label,
+        "tz_str": new_tz,
+        "chart": _chart_dict(subject, time_unknown=b.time_unknown),
+        "aspects": _aspects(chart_data),
+        "svg": _svg(chart_data, svg_opts) if with_svg else None,
+    }
