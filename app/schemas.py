@@ -77,6 +77,9 @@ class RelocationRequest(BaseModel):
     lat: float = Field(ge=-90, le=90)
     lon: float = Field(ge=-180, le=180)
     place_label: str = ""
+    # Страна места назначения. Без неё kerykeion подставлял «GB», и в подписи
+    # релокации стояла Великобритания независимо от города.
+    nation: str = Field(default="", max_length=2, pattern=r"^[A-Za-z]{2}$|^$")
     with_svg: bool = True
     svg: SvgOptions = SvgOptions()
 

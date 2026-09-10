@@ -69,3 +69,22 @@ def test_relocation_time_unknown_hides_houses():
     })
     assert r.status_code == 200
     assert "ascendant" not in r.json()["chart"]  # без времени домов нет и тут
+
+
+def test_relocation_nation_is_destination_not_gb():
+    """Регрессия: в подписи релокации стояла «GB» — дефолт kerykeion при
+    пустой стране. Теперь страна берётся у места переезда, а если её не
+    передали — остаётся пустой, но никогда чужой."""
+    with_nation = client.post("/relocation", json={
+        "subject": SUBJECT, "lat": 35.6895, "lon": 139.6917,
+        "place_label": "Токио", "nation": "JP", "with_svg": False,
+    })
+    assert with_nation.status_code == 200
+    assert with_nation.json()["chart"]["nation"] == "JP"
+
+    without = client.post("/relocation", json={
+        "subject": SUBJECT, "lat": 35.6895, "lon": 139.6917,
+        "place_label": "Токио", "with_svg": False,
+    })
+    assert without.status_code == 200
+    assert without.json()["chart"]["nation"] == ""

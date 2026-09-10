@@ -77,7 +77,10 @@ def lunar_return(req: LunarReturnRequest) -> dict:
 @app.post("/relocation")
 def relocation(req: RelocationRequest) -> dict:
     try:
-        return chart.relocation(req.subject, req.lat, req.lon, req.place_label, req.with_svg, req.svg)
+        return chart.relocation(
+            req.subject, req.lat, req.lon, req.place_label,
+            req.with_svg, req.svg, req.nation,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

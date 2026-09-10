@@ -485,7 +485,7 @@ def lunar_return(b: BirthData, year: int, month: int,
 # --- Реллокация ---------------------------------------------------------------
 
 def relocation(b: BirthData, lat: float, lon: float, place_label: str,
-               with_svg: bool, svg_opts: SvgOptions) -> dict[str, Any]:
+               with_svg: bool, svg_opts: SvgOptions, nation: str = "") -> dict[str, Any]:
     """Карта в другом месте: тот же момент рождения (UTC), дома — по новым
     координатам. Планеты не меняются — меняются ASC/MC и распределение по домам.
     Момент UTC восстанавливаем из локального времени рождения и зоны РОДНОГО
@@ -501,10 +501,12 @@ def relocation(b: BirthData, lat: float, lon: float, place_label: str,
         name=b.label,
         iso_utc_time=birth_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
         lat=lat, lng=lon, tz_str=new_tz,
-        city=place_label or "-", nation="",
+        city=place_label or "-", nation=nation,
         online=False,
     )
-    _fix_nation(subject, b.nation)
+    # Страна тут — места ПЕРЕЕЗДА, а не рождения; неизвестна — пусто, но
+    # никогда не «GB» из дефолта kerykeion.
+    _fix_nation(subject, nation)
     chart_data = ChartDataFactory.create_natal_chart_data(subject)
     return {
         "place_label": place_label,
