@@ -24,6 +24,9 @@ class BirthData(BaseModel):
     # Историческое смещение (декретное/летнее время СССР) берётся из tzdata по дате.
     tz: str | None = None
     place_label: str = ""
+    # ISO-код страны рождения: без него kerykeion молча подставляет «GB»,
+    # и в подписи карты появлялось «Москва, Свердловская Область, Россия, GB»
+    nation: str = ""
     house_system: str = "P"  # идентификаторы kerykeion; P = Placidus
     zodiac_type: Literal["Tropical", "Sidereal"] = "Tropical"
 

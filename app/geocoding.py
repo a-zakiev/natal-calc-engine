@@ -61,6 +61,7 @@ def search(q: str, limit: int = 10) -> list[dict[str, Any]]:
     return [
         {
             "geonameid": r["geonameid"],
+            "country_code": r["country"],  # ISO-код: нужен подписи карты
             "name": r["display_name"],
             # Страна нужна всегда: в справочнике есть и Париж во Франции,
             # и Париж в Челябинской области — без неё их не различить.

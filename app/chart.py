@@ -40,18 +40,29 @@ def resolve_tz(lat: float, lon: float) -> str:
     return tz
 
 
+def _fix_nation(subject, nation: str):
+    """Пустой nation kerykeion заменяет на «GB» — в подписи карты появлялась
+    Великобритания. Своего кода нет — лучше пусто, чем чужая страна."""
+    if not nation:
+        subject.nation = ""
+    return subject
+
+
 def build_subject(b: BirthData):
     tz = b.tz or resolve_tz(b.lat, b.lon)
     hour, minute = (12, 0) if b.time_unknown else (b.hour, b.minute)
-    return AstrologicalSubjectFactory.from_birth_data(
-        name=b.label,
-        year=b.year, month=b.month, day=b.day, hour=hour, minute=minute,
-        lat=b.lat, lng=b.lon, tz_str=tz,
-        city=b.place_label or "-", nation="",
-        houses_system_identifier=b.house_system,  # type: ignore[arg-type]
-        zodiac_type=b.zodiac_type,
-        online=False,
-        suppress_geonames_warning=True,
+    return _fix_nation(
+        AstrologicalSubjectFactory.from_birth_data(
+            name=b.label,
+            year=b.year, month=b.month, day=b.day, hour=hour, minute=minute,
+            lat=b.lat, lng=b.lon, tz_str=tz,
+            city=b.place_label or "-", nation=b.nation,
+            houses_system_identifier=b.house_system,  # type: ignore[arg-type]
+            zodiac_type=b.zodiac_type,
+            online=False,
+            suppress_geonames_warning=True,
+        ),
+        b.nation,
     )
 
 
@@ -151,8 +162,9 @@ def progressions(b: BirthData, target_utc: datetime, with_svg: bool, svg_opts: S
         name="Прогрессия",
         iso_utc_time=prog_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
         lat=b.lat, lng=b.lon, tz_str=tz,
-        city=b.place_label or "-", nation="", online=False,
+        city=b.place_label or "-", nation=b.nation, online=False,
     )
+    _fix_nation(prog_subject, b.nation)
     wheel = ChartDataFactory.create_natal_chart_data(prog_subject)
     cross = ChartDataFactory.create_transit_chart_data(natal, prog_subject)  # прогресс→натал
     return {
@@ -202,9 +214,10 @@ def solar_return(b: BirthData, year: int, with_svg: bool, svg_opts: SvgOptions) 
         name=f"Соляр {year}",
         iso_utc_time=sr_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
         lat=b.lat, lng=b.lon, tz_str=tz,
-        city=b.place_label or "-", nation="",
+        city=b.place_label or "-", nation=b.nation,
         online=False,
     )
+    _fix_nation(sr_subject, b.nation)
     chart_data = ChartDataFactory.create_natal_chart_data(sr_subject)
     return {
         "year": year,
@@ -322,9 +335,10 @@ def transits(b: BirthData, at_utc: datetime) -> dict[str, Any]:
         name="Transit",
         iso_utc_time=at.strftime("%Y-%m-%dT%H:%M:%SZ"),
         lat=b.lat, lng=b.lon, tz_str="UTC",
-        city=b.place_label or "-", nation="",
+        city=b.place_label or "-", nation=b.nation,
         online=False,
     )
+    _fix_nation(transit_subject, b.nation)
     chart_data = ChartDataFactory.create_transit_chart_data(natal_subject, transit_subject)
     drop = TIME_DEPENDENT_POINTS if b.time_unknown else None
     return {
@@ -453,9 +467,10 @@ def lunar_return(b: BirthData, year: int, month: int,
         name=f"Лунар {year}-{month:02d}",
         iso_utc_time=lr_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
         lat=b.lat, lng=b.lon, tz_str=tz,
-        city=b.place_label or "-", nation="",
+        city=b.place_label or "-", nation=b.nation,
         online=False,
     )
+    _fix_nation(lr_subject, b.nation)
     chart_data = ChartDataFactory.create_natal_chart_data(lr_subject)
     return {
         "year": year,
@@ -489,6 +504,7 @@ def relocation(b: BirthData, lat: float, lon: float, place_label: str,
         city=place_label or "-", nation="",
         online=False,
     )
+    _fix_nation(subject, b.nation)
     chart_data = ChartDataFactory.create_natal_chart_data(subject)
     return {
         "place_label": place_label,
