@@ -88,3 +88,21 @@ def test_relocation_nation_is_destination_not_gb():
     })
     assert without.status_code == 200
     assert without.json()["chart"]["nation"] == ""
+
+
+def test_svg_labels_are_russian():
+    """Регрессия: в панели данных синастрии стояли «Synastry», «Соня Point» и
+    «Перспектива: Apparent Geocentric», а секунды печатались одним штрихом."""
+    import re
+
+    first = {**SUBJECT, "label": "Я"}
+    second = {**SUBJECT, "label": "Соня", "year": 2016, "month": 11, "day": 7}
+    r = client.post("/synastry", json={
+        "first": first, "second": second, "with_svg": True,
+        "svg": {"theme": "dark", "language": "RU", "wheel_only": False},
+    })
+    assert r.status_code == 200
+    svg = r.json()["svg"]
+    labels = [t for t in set(re.findall(r">([^<>]{2,45})<", svg)) if re.search(r"[A-Za-z]{3,}", t)]
+    assert labels == [], labels
+    assert re.search(r"\d+°\d+'\d+\"", svg), "секунды должны заканчиваться двойным штрихом"

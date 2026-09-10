@@ -1,5 +1,6 @@
 """Расчёты поверх kerykeion. Детерминированно: вход → JSON/SVG, без внешних вызовов."""
 
+import re
 from datetime import datetime, timezone
 from functools import lru_cache
 from typing import Any
@@ -95,7 +96,19 @@ _SVG_LABELS = {
     "Зодиак: Тропический": "Зодиак: тропический",
     "Домификация: Плацидус": "Система домов: Плацидус",
     "Перспектива: Видимый Геоцентрический": "Точка отсчёта: с Земли",
+    # В композите тот же ярлык остаётся вовсе непереведённым.
+    "Перспектива: Apparent Geocentric": "Точка отсчёта: с Земли",
+    "Synastry": "Синастрия",
+    "Composite": "Композит",
+    "Transit": "Транзиты",
 }
+
+# «Соня Point» — заголовок колонки координат в двойном колесе: kerykeion
+# подставляет имя и слово Point, перевода для него нет.
+_POINT_COLUMN = re.compile(r">([^<>]{1,40}?) Point<")
+
+# Секунды kerykeion печатает одним штрихом: 23°46'45' вместо 23°46'45".
+_SECONDS = re.compile(r"(\d+°\d+')(\d+)'")
 
 
 def _svg(chart_data, opts: SvgOptions) -> str:
@@ -107,6 +120,8 @@ def _svg(chart_data, opts: SvgOptions) -> str:
     )
     for src, dst in _SVG_LABELS.items():
         svg = svg.replace(src, dst)
+    svg = _POINT_COLUMN.sub(lambda m: f">{m.group(1)}: точки<", svg)
+    svg = _SECONDS.sub(r'\1\2"', svg)
     return svg
 
 
