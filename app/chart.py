@@ -88,11 +88,26 @@ def _aspects(chart_data, drop_points: set[str] | None = None) -> list[dict[str, 
     return aspects
 
 
+# Русские подписи kerykeion в панели данных — машинный перевод: «Перспектива:
+# Видимый Геоцентрический» человеку не говорит ничего. Меняем на человеческие,
+# термины астрологии («Плацидус», «тропический») при этом сохраняем.
+_SVG_LABELS = {
+    "Зодиак: Тропический": "Зодиак: тропический",
+    "Домификация: Плацидус": "Система домов: Плацидус",
+    "Перспектива: Видимый Геоцентрический": "Точка отсчёта: с Земли",
+}
+
+
 def _svg(chart_data, opts: SvgOptions) -> str:
     drawer = ChartDrawer(chart_data, theme=opts.theme, chart_language=opts.language)
-    if opts.wheel_only:
-        return drawer.generate_wheel_only_svg_string()
-    return drawer.generate_svg_string()
+    svg = (
+        drawer.generate_wheel_only_svg_string()
+        if opts.wheel_only
+        else drawer.generate_svg_string()
+    )
+    for src, dst in _SVG_LABELS.items():
+        svg = svg.replace(src, dst)
+    return svg
 
 
 def composite(first: BirthData, second: BirthData, with_svg: bool, svg_opts: SvgOptions) -> dict[str, Any]:
