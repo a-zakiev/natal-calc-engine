@@ -105,10 +105,26 @@ _SVG_LABELS = {
 
 # «Соня Point» — заголовок колонки координат в двойном колесе: kerykeion
 # подставляет имя и слово Point, перевода для него нет.
-_POINT_COLUMN = re.compile(r">([^<>]{1,40}?) Point<")
+_POINT_COLUMN = re.compile(r"^(.{1,40}?) Point$")
 
 # Секунды kerykeion печатает одним штрихом: 23°46'45' вместо 23°46'45".
 _SECONDS = re.compile(r"(\d+°\d+')(\d+)'")
+
+# Только содержимое текстовых узлов. Раньше замена шла по всему документу —
+# а «Point» и «Transit» kerykeion использует ещё и в служебных атрибутах
+# (kr:node='ChartPoint'), так что глобальный replace рано или поздно сломал бы
+# разметку, а не подпись.
+_TEXT_NODE = re.compile(r">([^<>]+)<")
+
+
+def _humanize(text: str) -> str:
+    # Подстрокой, а не целиком: «Synastry: Я и Соня» — один текстовый узел.
+    # Внутри узла это безопасно, разметку такая замена не задевает.
+    for src, dst in _SVG_LABELS.items():
+        if src in text:
+            text = text.replace(src, dst)
+    text = _POINT_COLUMN.sub(lambda m: f"{m.group(1)}: точки", text)
+    return _SECONDS.sub(r'\1\2"', text)
 
 
 def _svg(chart_data, opts: SvgOptions) -> str:
@@ -118,11 +134,7 @@ def _svg(chart_data, opts: SvgOptions) -> str:
         if opts.wheel_only
         else drawer.generate_svg_string()
     )
-    for src, dst in _SVG_LABELS.items():
-        svg = svg.replace(src, dst)
-    svg = _POINT_COLUMN.sub(lambda m: f">{m.group(1)}: точки<", svg)
-    svg = _SECONDS.sub(r'\1\2"', svg)
-    return svg
+    return _TEXT_NODE.sub(lambda m: f">{_humanize(m.group(1))}<", svg)
 
 
 def composite(first: BirthData, second: BirthData, with_svg: bool, svg_opts: SvgOptions) -> dict[str, Any]:

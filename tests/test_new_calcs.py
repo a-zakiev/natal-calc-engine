@@ -106,3 +106,24 @@ def test_svg_labels_are_russian():
     labels = [t for t in set(re.findall(r">([^<>]{2,45})<", svg)) if re.search(r"[A-Za-z]{3,}", t)]
     assert labels == [], labels
     assert re.search(r"\d+°\d+'\d+\"", svg), "секунды должны заканчиваться двойным штрихом"
+
+
+def test_svg_replacement_does_not_touch_markup():
+    """Регрессия: подписи чинились глобальным replace по всему документу, а
+    «Point» и «Transit» kerykeion использует ещё и в служебных атрибутах
+    (kr:node='ChartPoint'). Замена обязана жить только в текстовых узлах."""
+    import re
+
+    r = client.post("/synastry", json={
+        "first": {**SUBJECT, "label": "Я"},
+        "second": {**SUBJECT, "label": "Соня", "year": 2016},
+        "with_svg": True,
+        "svg": {"theme": "dark", "language": "RU", "wheel_only": False},
+    })
+    assert r.status_code == 200
+    svg = r.json()["svg"]
+    # Служебные атрибуты целы...
+    assert "kr:node='ChartPoint'" in svg
+    # ...а в подписях латиницы нет.
+    labels = [t for t in set(re.findall(r">([^<>]{2,45})<", svg)) if re.search(r"[A-Za-z]{3,}", t)]
+    assert labels == [], labels
