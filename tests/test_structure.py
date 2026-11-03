@@ -81,3 +81,11 @@ def test_structure_real_chart_and_endpoint():
     # Без времени рождения — ни домов, ни углов, но фигуры и звёзды на планетах есть.
     r2 = structure(BirthData(label="Т", year=1985, month=6, day=15, time_unknown=True, lat=55.7558, lon=37.6173))
     assert r2["hemispheres"] is None and all(s["point"] not in ("Ascendant", "Medium_Coeli") for s in r2["stars"])
+
+
+def test_structure_sagittarius_sun_uses_kerykeion_sign_codes():
+    """Код Стрельца у kerykeion — Sag, а не Sgr: с Sgr управитель знака
+    Солнца не находился, и расчёт падал для всех, у кого Солнце в Стрельце."""
+    r = structure(BirthData(label="Т", year=1990, month=12, day=10, hour=12, minute=0, lat=55.7558, lon=37.6173))
+    assert any(p["name"] == "Jupiter" and "ruler_sun" in p["reasons"] for p in r["dominant_planets"])
+    assert all(p["sign"] != "Sgr" for p in r["patterns"] if "sign" in p)

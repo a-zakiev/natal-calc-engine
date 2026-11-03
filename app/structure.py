@@ -21,12 +21,12 @@ LUMINARIES = {"Sun", "Moon"}
 ORBS = {"conjunction": 8.0, "opposition": 8.0, "trine": 7.0, "square": 7.0, "sextile": 5.0, "quincunx": 3.0}
 ANGLES = {"conjunction": 0, "opposition": 180, "trine": 120, "square": 90, "sextile": 60, "quincunx": 150}
 
-SIGNS = ["Ari", "Tau", "Gem", "Can", "Leo", "Vir", "Lib", "Sco", "Sgr", "Cap", "Aqu", "Pis"]
-ELEMENT = {"Ari": "Fire", "Leo": "Fire", "Sgr": "Fire", "Tau": "Earth", "Vir": "Earth", "Cap": "Earth",
+SIGNS = ["Ari", "Tau", "Gem", "Can", "Leo", "Vir", "Lib", "Sco", "Sag", "Cap", "Aqu", "Pis"]
+ELEMENT = {"Ari": "Fire", "Leo": "Fire", "Sag": "Fire", "Tau": "Earth", "Vir": "Earth", "Cap": "Earth",
            "Gem": "Air", "Lib": "Air", "Aqu": "Air", "Can": "Water", "Sco": "Water", "Pis": "Water"}
 # Традиционный управитель и современный соуправитель.
 RULER = {"Ari": "Mars", "Tau": "Venus", "Gem": "Mercury", "Can": "Moon", "Leo": "Sun", "Vir": "Mercury",
-         "Lib": "Venus", "Sco": "Mars", "Sgr": "Jupiter", "Cap": "Saturn", "Aqu": "Saturn", "Pis": "Jupiter"}
+         "Lib": "Venus", "Sco": "Mars", "Sag": "Jupiter", "Cap": "Saturn", "Aqu": "Saturn", "Pis": "Jupiter"}
 CO_RULER = {"Sco": "Pluto", "Aqu": "Uranus", "Pis": "Neptune"}
 EXALTATION = {"Sun": "Ari", "Moon": "Tau", "Mercury": "Vir", "Venus": "Pis", "Mars": "Cap", "Jupiter": "Can",
               "Saturn": "Lib"}
