@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Query
 
-from . import chart, geocoding
+from . import chart, geocoding, structure
 from .schemas import (
     KeyDatesRequest,
     NatalRequest,
@@ -11,6 +11,7 @@ from .schemas import (
     SolarReturnRequest,
     SynastryRequest,
     TransitsRequest,
+    StructureRequest,
 )
 
 app = FastAPI(
@@ -30,6 +31,15 @@ def health() -> dict:
 def natal(req: NatalRequest) -> dict:
     try:
         return chart.natal(req.subject, req.with_svg, req.svg)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/structure")
+def structure_endpoint(req: StructureRequest) -> dict:
+    """Структура карты: форма, фигуры аспектов, доминанты, полусферы, звёзды."""
+    try:
+        return structure.structure(req.subject)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

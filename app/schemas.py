@@ -43,6 +43,10 @@ class NatalRequest(BaseModel):
     svg: SvgOptions = SvgOptions()
 
 
+class StructureRequest(BaseModel):
+    subject: BirthData
+
+
 class SynastryRequest(BaseModel):
     first: BirthData
     second: BirthData

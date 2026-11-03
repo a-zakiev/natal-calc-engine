@@ -1,0 +1,5 @@
+kerykeion<6,>=5.12.10
+pyswisseph>=2.10.3.2
+fastapi>=0.115
+uvicorn[standard]>=0.30
+timezonefinder>=6.5
