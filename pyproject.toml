@@ -11,6 +11,9 @@ dependencies = [
     "kerykeion>=5.12.10,<6",
     # Импортируется напрямую (app/chart.py), а не только через kerykeion.
     "pyswisseph>=2.10.3.2",
+    # Базы часовых поясов со старыми именами (Europe/Kiev и т.п.): системный
+    # tzdata в свежих образах их больше не содержит.
+    "tzdata>=2025.2",
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
     "timezonefinder>=6.5",

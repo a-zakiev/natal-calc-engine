@@ -21,8 +21,8 @@ import pytest
         # С октября 2014: постоянный UTC+3
         ("Europe/Moscow", datetime(2020, 6, 15, 12, 0), "+0300"),
         # Киев в СССР: UTC+3 (декретное), летом с 1981 — +4
-        ("Europe/Kiev", datetime(1975, 6, 15, 12, 0), "+0300"),
-        ("Europe/Kiev", datetime(1985, 6, 15, 12, 0), "+0400"),
+        ("Europe/Kyiv", datetime(1975, 6, 15, 12, 0), "+0300"),
+        ("Europe/Kyiv", datetime(1985, 6, 15, 12, 0), "+0400"),
         # Свердловск/Екатеринбург: UTC+5 зимой советского периода
         ("Asia/Yekaterinburg", datetime(1985, 1, 15, 12, 0), "+0500"),
     ],

@@ -7,3 +7,7 @@ __pycache__/
 data/
 .DS_Store
 examples/*.png
+
+# артефакты сборки: попадали в git и подменяли код при pip install . в CI
+build/
+*.egg-info/
